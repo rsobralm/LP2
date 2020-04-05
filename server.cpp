@@ -11,18 +11,35 @@
 
 using namespace std;
 
+
+typedef struct {
+    int cliente_fd;
+    string nome;
+}thread_arg, *ptr_thread_arg;
+
+
+pthread_t threads[10];
+thread_arg arguments[10];
+
 void * recebe_mensagem(void* param) {
 
-	int client_fd = (intptr_t) param;
+	//int client_fd = (intptr_t) param;
+    ptr_thread_arg targ = (ptr_thread_arg)param;
 
 	char msg[100];
-   
 	
 	while(1) {
         bzero(msg, 100); // inicializa a mensagem com 0
-        read(client_fd, msg, 100); // le mensagem do socket cliente associado
-        printf("Recebi do cliente: %s\n",msg); // exibe o que recebeu do cliente
-        write(client_fd, msg, strlen(msg)+1); // envia de volta a mesma mensgem
+        read(targ->cliente_fd, msg, 100); // le mensagem do socket cliente associado
+       // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
+        cout << targ->nome << " enviou uma mensagem: " << msg << endl;
+        //write(targ->cliente_fd, msg, strlen(msg)+1); // envia de volta a mesma mensgem
+        for(int i = 0; i < 10; i++){
+            if(arguments[i].nome != targ->nome && arguments[i].cliente_fd > 0){
+                write(arguments[i].cliente_fd, msg, strlen(msg)+1);
+            }
+        }
+
     }
 
 }
@@ -35,12 +52,13 @@ int main(int argc, char ** argv){
     int server_port = 22000;
     string server_name = argv[2]; 
 
+
     int listen_fd, client_fd; // dois file descriptors, 1 para ouvir solicitacoes, outro para o cliente
 
     struct sockaddr_in server_addr; // struct com informacoes para o server socket
 	struct sockaddr_in client_addr; // struct que armazenara informacoes do cliente conectado
 
-    pthread_t threads[10]; // array que armazenara 10 threads (MAXIMO DE CLIENTES)
+   // pthread_t threads[10]; // array que armazenara 10 threads (MAXIMO DE CLIENTES)
 
     int thread_count = 0; // contador de threads (de clientes
 
@@ -69,11 +87,13 @@ int main(int argc, char ** argv){
 
     while(1){
 		client_fd = accept(listen_fd, (struct sockaddr*) &client_addr, (socklen_t*)&c); // funcao bloqueante, gera novo socket 
-
+        arguments[thread_count].cliente_fd = client_fd;
         bzero(name, 100); // inicializa a mensagem com 0
         read(client_fd, name, 100); // le mensagem do socket cliente associado
         cout << name << " se conectou com o IP: " <<  inet_ntoa(client_addr.sin_addr) << endl; // exibe o que recebeu do cliente
-		pthread_create(&threads[thread_count++], NULL, recebe_mensagem, (void*)(intptr_t)client_fd);
+        arguments[thread_count].nome = name;
+		pthread_create(&threads[thread_count], NULL, recebe_mensagem, &(arguments[thread_count++]));
+        //thread_count++;
 
 	}
 

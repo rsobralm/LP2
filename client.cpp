@@ -7,8 +7,29 @@
 //#include <cstring>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 using namespace std;
+
+
+void * recebe_mensagem(void* param) {
+
+	int client_fd = (intptr_t) param;
+    //ptr_thread_arg targ = (ptr_thread_arg)param;
+
+	char msg[100];
+	
+	while(1) {
+        bzero(msg, 100); // inicializa a mensagem com 0
+        read(client_fd, msg, 100); // le mensagem do socket cliente associado
+       // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
+        cout  << "mensagem recebida: " << msg << endl;
+
+    }
+
+}
+
+
 
 int main(int argc, char** argv){
 
@@ -23,6 +44,8 @@ int main(int argc, char** argv){
 	char recv_msg[100]; // string com mensagem a receber
 
 	struct sockaddr_in server_addr; // struct com informacoes do servidor a conectar
+
+	pthread_t threads;
 
 	client_fd = socket(AF_INET, SOCK_STREAM, 0); //criacao do socket cliente
 
@@ -46,9 +69,11 @@ int main(int argc, char** argv){
 		fgets(send_msg, 100, stdin); //le do usuario string para enviar ao servidor
 
 		write(client_fd, send_msg, strlen(send_msg)+1);
-		read(client_fd, recv_msg, 100); // le do servidor string para exibir para o usuario
+		//read(client_fd, recv_msg, 100); // le do servidor string para exibir para o usuario
+		pthread_create(&threads, NULL, recebe_mensagem, (void*) (intptr_t)client_fd);
 
-		printf("Recebi do servidor: %s\n", recv_msg); // exibe o recebido na tela
+		//printf("Recebi do servidor: %s\n", recv_msg); // exibe o recebido na tela
+		
 
 	}	
 
