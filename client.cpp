@@ -23,7 +23,7 @@ void * recebe_mensagem(void* param) {
         bzero(msg, 100); // inicializa a mensagem com 0
         read(client_fd, msg, 100); // le mensagem do socket cliente associado
        // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
-        cout  << "mensagem recebida: " << msg << endl;
+        cout  << "\nmensagem recebida: " << msg << endl;
 
     }
 
