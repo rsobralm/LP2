@@ -33,7 +33,7 @@ void Client::getMessage(){
         bzero(msg, 300); // inicializa a mensagem com 0
         read(client_fd, msg, 300); // le mensagem do socket cliente associado
        // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
-        cout << msg << endl;
+        cout << "\n" << msg << endl;
     }
 }
 

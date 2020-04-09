@@ -7,12 +7,16 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <arpa/inet.h>
+#include <fstream>
+#include <mutex>
 
 using namespace std;
 
 class ServerThreads {
   int client_fd;
   string client_name;
+  ofstream regMessages;
+  mutex mAcessToFile;
 
   public: 
   ServerThreads();
@@ -21,6 +25,7 @@ class ServerThreads {
   void setClient_name(string client_name);
   int getClient_fd();
   string getClient_name();
+  void writeFile(string message);
 };
 
 ServerThreads::ServerThreads(){};
@@ -41,20 +46,29 @@ string ServerThreads::getClient_name(){
     return client_name;
 }
 
+void ServerThreads::writeFile(string message){
+    mAcessToFile.lock();
+    regMessages.open("serverRegister.txt",std::ofstream::app);
+    regMessages << message << endl;
+    regMessages.close();
+    mAcessToFile.unlock();
+}
+
 
 void ServerThreads::getMessage(ServerThreads *sv_threads){
     char msg[300];
     char nome_msg[300];
     
-    string display = client_name + " enviou: ";
-    char cstr[300];
-    bzero(cstr, 300);
-	strcpy(cstr, display.c_str());
-
 	while(1) {
+        string display = client_name + " enviou: ";
+        char cstr[300];
+        bzero(cstr, 300);
+        strcpy(cstr, display.c_str());
         bzero(msg, 300); // inicializa a mensagem com 0
         if(read(client_fd, msg, 300)) { // le mensagem do socket cliente associado
-            cout << "\n" <<client_name << " enviou uma mensagem: " << msg << endl;
+            cout << "\n" << client_name << " enviou uma mensagem: " << msg << endl;
+            string msgToFile = client_name + " enviou uma mensagem: " + msg;
+            writeFile(msgToFile);
             for(int i = 0; i < 10; i++){
                 if(sv_threads[i].client_name != client_name && sv_threads[i].client_fd > 0){
                     strcat(cstr, msg);
