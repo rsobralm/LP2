@@ -12,6 +12,8 @@
 
 using namespace std;
 
+char servername[100];
+
 class ServerThreads {
   int client_fd;
   string client_name;
@@ -20,7 +22,7 @@ class ServerThreads {
 
   public: 
   ServerThreads();
-  void getMessage(ServerThreads *sv_threads);
+  void recvMessage(ServerThreads *sv_threads);
   void setClient_fd(int client_fd);
   void setClient_name(string client_name);
   int getClient_fd();
@@ -77,16 +79,18 @@ string ServerThreads::getTime(){
   return to_string(dia) + "/" + to_string(mes) + "/" + to_string(ano) + "-" + to_string(hora) + ":" + to_string(min) + ":" + to_string(sec);
 }
 
-void ServerThreads::getMessage(ServerThreads *sv_threads){
+void ServerThreads::recvMessage(ServerThreads *sv_threads){
     char msg[300];
     char nome_msg[300];
-    char cted_msg[300];
+    char cted_msg[300] = "Mensagem do servidor ";
 
-    bzero(cted_msg, 300);
-    strcpy(cted_msg, (client_name + " se conectou").c_str());
+    strcat(cted_msg, servername);
+
+    //bzero(cted_msg, 300);
+    strcat(cted_msg, (client_name + " se conectou").c_str());
     for(int i = 0; i < 10; i++){
         if(sv_threads[i].client_name != client_name && sv_threads[i].client_fd > 0){
-            strcat(cted_msg, msg);
+            //strcat(cted_msg, msg);
             write(sv_threads[i].client_fd, cted_msg, strlen(cted_msg)+1);
         }
     }
@@ -126,11 +130,15 @@ void ServerThreads::getMessage(ServerThreads *sv_threads){
 
     thread clients_threads[10];
     ServerThreads threads[10];
+    
+
 
 int main(int argc, char** argv){
 
-    int server_port = 22000;
+    //int server_port = 22000;
+    int server_port = atoi(argv[1]);
     string server_name = argv[2]; 
+    strcpy(servername, (server_name + ": ").c_str());
 
     int listen_fd, client_fd; // dois file descriptors, 1 para ouvir solicitacoes, outro para o cliente
 
@@ -157,8 +165,6 @@ int main(int argc, char** argv){
 
     int c = sizeof(struct sockaddr_in);
     char name[300];
-    char name_cpy[300] = "alguem se conectou";
-    char c_msg[300] = "alguem se conectou";
 
     cout << "Aguardando conexoes na porta " << server_port << endl;
 
@@ -168,11 +174,8 @@ int main(int argc, char** argv){
         bzero(name, 300); // inicializa a mensagem com 0
         read(client_fd, name, 300); // le mensagem do socket cliente associado
         cout << name << " se conectou com o IP: " <<  inet_ntoa(client_addr.sin_addr) << endl; // exibe o que recebeu do cliente
-		//pthread_create(&threads[thread_count], NULL, recebe_mensagem, &(arguments[thread_count++]));
-        //strcpy(name_cpy, name);
-        //strcat(name_cpy, c_msg);
         threads[thread_count].setClient_name(name);
-        clients_threads[thread_count] = thread(&ServerThreads::getMessage, &threads[thread_count++], threads);
+        clients_threads[thread_count] = thread(&ServerThreads::recvMessage, &threads[thread_count++], threads);
 
 	}
 

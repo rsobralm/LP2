@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <thread>
-#include <mutex>
 
 
 using namespace std;
@@ -18,7 +17,7 @@ class Client {
 
   public: 
   Client();
-  void getMessage();
+  void recvMessage();
   void sendMessage();
   void setClient_fd(int client_fd);
   void setClient_name(string client_name);
@@ -28,19 +27,17 @@ class Client {
 
 Client::Client(){};
 
-void Client::getMessage(){
+void Client::recvMessage(){
 
     char msg[300];
 	
-	while(1){
-		//m.lock();
-		
-		//m.unlock();
+	while(1){		
         bzero(msg, 300); // inicializa a mensagem com 0
-        read(client_fd, msg, 300); // le mensagem do socket cliente associado
-       // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
-	   	//m.lock();
-		cout << "\n" << msg << endl;
+        if(read(client_fd, msg, 300) == 0){ // le mensagem do socket cliente associado
+			cout << "A conexao com o servidor foi perdida." << endl;
+			exit(1);
+		}
+		cout << "\n" <<msg << endl;
 		
     }
 
@@ -52,13 +49,7 @@ void Client::sendMessage(){
 
 	while(1) {
 		bzero( send_msg, 300);
-		//bzero( recv_msg, 300);
-		//cout << "Digite algo para enviar ao servidor: ";
-		//m.lock();
-		//printf("Digite algo: ");
-		
 		fgets(send_msg, 300, stdin); //le do usuario string para enviar ao servidor
-		//m.unlock();
 		write(client_fd, send_msg, strlen(send_msg)+1);
 		
 	}
@@ -88,19 +79,19 @@ int main(int argc, char** argv){
 
     int client_fd; // file descriptor do socket do cliente
 
-	int port = 22000;
+	//int port = 22000;
+	int port = atoi(argv[2]);
 
 	Client client_obj;
 
-	char host[] = "127.0.0.1"; 
-   	client_obj.setClient_name(argv[1]); 
+	//char host[] = "127.0.0.1"; 
+	char *host = argv[1];
+   	client_obj.setClient_name(argv[3]); 
 
 	char send_msg[300]; // string com mensagem a enviar
 	char recv_msg[300]; // string com mensagem a receber
 
 	struct sockaddr_in server_addr; // struct com informacoes do servidor a conectar
-
-	//pthread_t threads;
 
 	client_obj.setClient_fd(socket(AF_INET, SOCK_STREAM, 0)); //criacao do socket cliente
 
@@ -121,7 +112,7 @@ int main(int argc, char** argv){
 
 	write(client_obj.getClient_fd(), client_obj.getClient_name().c_str(), client_obj.getClient_name().size());
 
-	thread t(&Client::getMessage, &client_obj);
+	thread t(&Client::recvMessage, &client_obj);
 	//thread t1(&Client::sendMessage, &client_obj);
 
 	//while(1);
@@ -129,17 +120,8 @@ int main(int argc, char** argv){
 	while(1) {
 		
 		bzero( send_msg, 300);
-		//bzero( recv_msg, 300);
-        //cout << "Digite algo para enviar ao servidor: ";
-		//printf("Digite algo: ");
 		fgets(send_msg, 300, stdin); //le do usuario string para enviar ao servidor
 		write(client_obj.getClient_fd(), send_msg, strlen(send_msg)+1);
-		//}
-		//read(client_fd, recv_msg, 300); // le do servidor string para exibir para o usuario
-		//pthread_create(&threads, NULL, recebe_mensagem, (void*) (intptr_t)client_fd);
-        //thread t(&Client::getMessage, &client_obj);	
-		//printf("Recebi do servidor: %s\n", recv_msg); // exibe o recebido na tela
-			
 	}	
 
 	return 0;
