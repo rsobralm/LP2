@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <thread>
+#include <mutex>
+
 
 using namespace std;
 
@@ -17,6 +19,7 @@ class Client {
   public: 
   Client();
   void getMessage();
+  void sendMessage();
   void setClient_fd(int client_fd);
   void setClient_name(string client_name);
   string getClient_name();
@@ -30,12 +33,38 @@ void Client::getMessage(){
     char msg[300];
 	
 	while(1){
+		//m.lock();
+		
+		//m.unlock();
         bzero(msg, 300); // inicializa a mensagem com 0
         read(client_fd, msg, 300); // le mensagem do socket cliente associado
        // printf("%s enviou uma mensagem: %s\n",targ->nome,msg); // exibe o que recebeu do cliente
-        cout << "\n" << msg << endl;
+	   	//m.lock();
+		cout << "\n" << msg << endl;
+		
     }
+
 }
+
+void Client::sendMessage(){
+	
+	char send_msg[300];
+
+	while(1) {
+		bzero( send_msg, 300);
+		//bzero( recv_msg, 300);
+		//cout << "Digite algo para enviar ao servidor: ";
+		//m.lock();
+		//printf("Digite algo: ");
+		
+		fgets(send_msg, 300, stdin); //le do usuario string para enviar ao servidor
+		//m.unlock();
+		write(client_fd, send_msg, strlen(send_msg)+1);
+		
+	}
+
+}
+
 
 void Client::setClient_fd(int client_fd){
     this->client_fd = client_fd;
@@ -87,26 +116,30 @@ int main(int argc, char** argv){
 		cout << "Não foi possivel estabelecer conexão com o servidor, tente novamente" << endl;
 		return 0;
 	}
-	
+
+	cout << "Conectado ao servidor, agora voce pode enviar e receber mensagens." << endl;
+
 	write(client_obj.getClient_fd(), client_obj.getClient_name().c_str(), client_obj.getClient_name().size());
 
 	thread t(&Client::getMessage, &client_obj);
-	
+	//thread t1(&Client::sendMessage, &client_obj);
+
+	//while(1);
+
 	while(1) {
+		
 		bzero( send_msg, 300);
-		bzero( recv_msg, 300);
-
-        cout << "Digite algo para enviar ao servidor: ";
+		//bzero( recv_msg, 300);
+        //cout << "Digite algo para enviar ao servidor: ";
+		//printf("Digite algo: ");
 		fgets(send_msg, 300, stdin); //le do usuario string para enviar ao servidor
-
 		write(client_obj.getClient_fd(), send_msg, strlen(send_msg)+1);
+		//}
 		//read(client_fd, recv_msg, 300); // le do servidor string para exibir para o usuario
 		//pthread_create(&threads, NULL, recebe_mensagem, (void*) (intptr_t)client_fd);
-        //thread t(&Client::getMessage, &client_obj);
-
+        //thread t(&Client::getMessage, &client_obj);	
 		//printf("Recebi do servidor: %s\n", recv_msg); // exibe o recebido na tela
-		
-
+			
 	}	
 
 	return 0;

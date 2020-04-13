@@ -25,6 +25,7 @@ class ServerThreads {
   void setClient_name(string client_name);
   int getClient_fd();
   string getClient_name();
+  string getTime();
   void writeFile(string message);
 };
 
@@ -54,11 +55,42 @@ void ServerThreads::writeFile(string message){
     mAcessToFile.unlock();
 }
 
+string ServerThreads::getTime(){
+
+  time_t timer;
+  struct tm *horarioLocal;
+
+  time(&timer); // Obtem informações de data e hora
+  horarioLocal = localtime(&timer); // Converte a hora atual para a hora local
+
+  int dia = horarioLocal->tm_mday;
+  int mes = horarioLocal->tm_mon + 1;
+  int ano = horarioLocal->tm_year + 1900;
+
+  int hora = horarioLocal->tm_hour;
+  int min  = horarioLocal->tm_min;
+  int sec  = horarioLocal->tm_sec;
+
+  //cout << "Horário: " << hora << ":" << min << ":" << sec << endl;
+  //cout << "Data: "    << dia  << "/" << mes << "/" << ano << endl;
+
+  return to_string(dia) + "/" + to_string(mes) + "/" + to_string(ano) + "-" + to_string(hora) + ":" + to_string(min) + ":" + to_string(sec);
+}
 
 void ServerThreads::getMessage(ServerThreads *sv_threads){
     char msg[300];
     char nome_msg[300];
-    
+    char cted_msg[300];
+
+    bzero(cted_msg, 300);
+    strcpy(cted_msg, (client_name + " se conectou").c_str());
+    for(int i = 0; i < 10; i++){
+        if(sv_threads[i].client_name != client_name && sv_threads[i].client_fd > 0){
+            strcat(cted_msg, msg);
+            write(sv_threads[i].client_fd, cted_msg, strlen(cted_msg)+1);
+        }
+    }
+
 	while(1) {
         string display = client_name + " enviou: ";
         char cstr[300];
@@ -67,7 +99,7 @@ void ServerThreads::getMessage(ServerThreads *sv_threads){
         bzero(msg, 300); // inicializa a mensagem com 0
         if(read(client_fd, msg, 300)) { // le mensagem do socket cliente associado
             cout << "\n" << client_name << " enviou uma mensagem: " << msg << endl;
-            string msgToFile = client_name + " enviou uma mensagem: " + msg;
+            string msgToFile = getTime() + " " + client_name + " enviou uma mensagem: " + msg;
             writeFile(msgToFile);
             for(int i = 0; i < 10; i++){
                 if(sv_threads[i].client_name != client_name && sv_threads[i].client_fd > 0){
@@ -78,6 +110,13 @@ void ServerThreads::getMessage(ServerThreads *sv_threads){
         }
         else{
             cout << client_name << " se desconectou do servidor" << endl;
+            char disc_msg[300];
+            strcpy(disc_msg,(client_name + " se desconectou").c_str());
+            for(int i = 0; i < 10; i++){
+                if(sv_threads[i].client_name != client_name && sv_threads[i].client_fd > 0){
+                    write(sv_threads[i].client_fd, disc_msg, strlen(disc_msg)+1);
+                }
+            }
             return;
         }
         
@@ -118,6 +157,8 @@ int main(int argc, char** argv){
 
     int c = sizeof(struct sockaddr_in);
     char name[300];
+    char name_cpy[300] = "alguem se conectou";
+    char c_msg[300] = "alguem se conectou";
 
     cout << "Aguardando conexoes na porta " << server_port << endl;
 
@@ -128,6 +169,8 @@ int main(int argc, char** argv){
         read(client_fd, name, 300); // le mensagem do socket cliente associado
         cout << name << " se conectou com o IP: " <<  inet_ntoa(client_addr.sin_addr) << endl; // exibe o que recebeu do cliente
 		//pthread_create(&threads[thread_count], NULL, recebe_mensagem, &(arguments[thread_count++]));
+        //strcpy(name_cpy, name);
+        //strcat(name_cpy, c_msg);
         threads[thread_count].setClient_name(name);
         clients_threads[thread_count] = thread(&ServerThreads::getMessage, &threads[thread_count++], threads);
 
